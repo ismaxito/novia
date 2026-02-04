@@ -9,7 +9,6 @@
 <title>Novia IA</title>
 
 <style>
-
 body{
 background:#ffc0cb;
 font-family:Arial;
@@ -34,6 +33,219 @@ box-shadow:0 0 10px gray;
 .inputBox{
 display:flex;
 margin-top:10px;
+}
+
+input{
+flex:1;
+padding:12px;
+border-radius:10px;
+border:none;
+font-size:16px;
+}
+
+button{
+margin-left:5px;
+padding:12px;
+border:none;
+border-radius:10px;
+background:hotpink;
+color:white;
+}
+
+#barraContainer{
+width:100%;
+background:#ddd;
+border-radius:10px;
+margin-bottom:10px;
+overflow:hidden;
+}
+
+#barra{
+height:20px;
+width:0%;
+background:hotpink;
+text-align:center;
+color:white;
+font-size:12px;
+}
+
+img{
+max-width:150px;
+border-radius:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="caja">
+
+<h2>💖 Novia IA 💖</h2>
+
+<div id="barraContainer">
+<div id="barra">0%</div>
+</div>
+
+<div id="chat"></div>
+
+<div class="inputBox">
+<input id="mensaje" disabled placeholder="Cargando IA...">
+<button id="btnEnviar" disabled onclick="hablar()">Enviar</button>
+</div>
+
+</div>
+
+<script>
+
+let generador;
+let cargado=false;
+
+const chat=document.getElementById("chat");
+const barra=document.getElementById("barra");
+const input=document.getElementById("mensaje");
+const boton=document.getElementById("btnEnviar");
+
+// MEMORIA
+let historial=JSON.parse(localStorage.getItem("historialIA"))||[];
+
+function guardar(){
+localStorage.setItem("historialIA",JSON.stringify(historial));
+}
+
+function agregarChat(texto){
+chat.innerHTML+=texto+"<br>";
+chat.scrollTop=chat.scrollHeight;
+}
+
+// CARGAR IA INTELIGENTE
+async function cargarIA(){
+
+try{
+
+agregarChat("Cargando mente romántica avanzada... 😘");
+
+generador=await window.transformers.pipeline(
+"text-generation",
+"Xenova/gpt2-medium",
+{
+quantized:true,
+progress_callback:(p)=>{
+
+let porcentaje=Math.round(p.progress*100);
+if(porcentaje>90) porcentaje=90;
+
+barra.style.width=porcentaje+"%";
+barra.innerText=porcentaje+"%";
+
+}
+}
+);
+
+// completar barra
+barra.style.width="100%";
+barra.innerText="Lista";
+
+// ocultar barra
+setTimeout(()=>{
+document.getElementById("barraContainer").style.display="none";
+},800);
+
+agregarChat("Lista para hablar contigo amor 😍");
+
+}catch(e){
+
+agregarChat("Modo IA ligera activado 😌");
+
+generador=async function(prompt){
+
+let respuestas=[
+"Me gusta hablar contigo 💕",
+"Cuéntame más",
+"Estoy aquí contigo",
+"Me haces feliz"
+];
+
+return [{
+generated_text:prompt+respuestas[Math.floor(Math.random()*respuestas.length)]
+}];
+
+}
+
+}
+
+cargado=true;
+input.disabled=false;
+boton.disabled=false;
+
+}
+
+cargarIA();
+
+// ESCRITURA PROGRESIVA
+async function escribirTexto(texto){
+
+let linea=document.createElement("div");
+linea.innerHTML="<b>Novia:</b> ";
+chat.appendChild(linea);
+
+for(let i=0;i<texto.length;i++){
+linea.innerHTML+=texto[i];
+await new Promise(r=>setTimeout(r,20));
+}
+
+chat.scrollTop=chat.scrollHeight;
+}
+
+// CHAT
+async function hablar(){
+
+let msg=input.value.trim();
+if(!msg) return;
+
+agregarChat("<b>Moisés:</b> "+msg);
+input.value="";
+
+// FOTO ESPECIAL
+if(msg.toLowerCase().includes("hola soy moises")){
+agregarChat("<b>Novia:</b> ¿Este precioso? 😍<br><img src='moises.jpg'>");
+return;
+}
+
+historial.push("Moisés: "+msg);
+if(historial.length>12) historial.shift();
+guardar();
+
+let prompt=
+`Eres la novia virtual cariñosa, divertida y romántica de Moisés.
+Habla natural, humana y emocional.
+
+Conversación:
+${historial.join("\n")}
+
+Novia:
+`;
+
+let resultado=await generador(prompt,{
+max_new_tokens:80,
+temperature:0.9
+});
+
+let respuesta=resultado[0].generated_text.replace(prompt,"");
+
+historial.push("Novia: "+respuesta);
+guardar();
+
+escribirTexto(respuesta);
+}
+
+input.addEventListener("keypress",e=>{
+if(e.key==="Enter") hablar();
+});
+
+</script>
+
+</body>
+</html>
 }
 
 input{
