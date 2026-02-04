@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+                              <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -9,7 +9,6 @@
 <title>Novia IA</title>
 
 <style>
-
 body{
 background:#ffc0cb;
 font-family:Arial;
@@ -69,13 +68,6 @@ text-align:center;
 color:white;
 font-size:12px;
 }
-
-img{
-max-width:150px;
-border-radius:10px;
-margin-top:5px;
-}
-
 </style>
 </head>
 
@@ -93,7 +85,7 @@ margin-top:5px;
 
 <div class="inputBox">
 <input id="mensaje" disabled placeholder="Cargando IA...">
-<button id="btnEnviar" onclick="hablar()" disabled>Enviar</button>
+<button onclick="hablar()" id="btnEnviar" disabled>Enviar</button>
 </div>
 
 </div>
@@ -101,18 +93,18 @@ margin-top:5px;
 <script>
 
 let generador;
-let cargado = false;
+let cargado=false;
 
-const barra = document.getElementById("barra");
 const chat = document.getElementById("chat");
+const barra = document.getElementById("barra");
 const input = document.getElementById("mensaje");
 const boton = document.getElementById("btnEnviar");
 
-// ===== MEMORIA =====
-let memoria = JSON.parse(localStorage.getItem("memoriaIA")) || [];
+// ===== MEMORIA CHATGPT STYLE =====
+let historial = JSON.parse(localStorage.getItem("historialIA")) || [];
 
-function guardarMemoria(){
-localStorage.setItem("memoriaIA", JSON.stringify(memoria));
+function guardar(){
+localStorage.setItem("historialIA", JSON.stringify(historial));
 }
 
 function agregarChat(texto){
@@ -120,37 +112,19 @@ chat.innerHTML += texto + "<br>";
 chat.scrollTop = chat.scrollHeight;
 }
 
-// ===== BARRA =====
-function barraProgreso(){
-
-let progreso = 0;
-
-let intervalo = setInterval(()=>{
-
-if(cargado){
-clearInterval(intervalo);
-barra.style.width="100%";
-barra.innerText="100%";
-return;
-}
-
-if(progreso < 95){
-progreso += 1;
-barra.style.width=progreso+"%";
-barra.innerText=progreso+"%";
-}
-
-},250);
-}
-
-// ===== CARGAR IA =====
+// ===== BARRA REAL =====
 async function cargarIA(){
 
-agregarChat("Descargando mente romántica... 😘");
-
-barraProgreso();
-
 try{
+
+let progreso = 0;
+let fake = setInterval(()=>{
+if(progreso < 90){
+progreso++;
+barra.style.width = progreso+"%";
+barra.innerText = progreso+"%";
+}
+},200);
 
 generador = await window.transformers.pipeline(
 "text-generation",
@@ -158,48 +132,52 @@ generador = await window.transformers.pipeline(
 {quantized:true}
 );
 
-agregarChat("Modo IA completo activado 😍");
+clearInterval(fake);
+barra.style.width="100%";
+barra.innerText="100%";
+
+agregarChat("Lista para hablar contigo amor 😘");
 
 }catch(e){
 
-console.log("IA real falló, activando modo ligero");
+agregarChat("Modo básico activado 😌");
 
-// fallback
 generador = async function(prompt){
-
-let respuestas = [
+let r = [
 "Me gusta hablar contigo 💕",
-"Cuéntame más amor",
-"Estoy pensando en ti 😘",
-"Qué lindo lo que dices",
-"No entendí mucho pero te quiero JSJS"
+"Cuéntame más",
+"Estoy aquí contigo",
+"Eso suena interesante",
+"Me haces sonreír"
 ];
 
 return [{
-generated_text: prompt + respuestas[Math.floor(Math.random()*respuestas.length)]
+generated_text: prompt + r[Math.floor(Math.random()*r.length)]
 }];
-
-};
-
-agregarChat("Modo IA ligero activado 😌");
+}
 
 }
 
-cargado = true;
+cargado=true;
 input.disabled=false;
 boton.disabled=false;
 }
 
 cargarIA();
 
-// ===== ESCRIBIENDO =====
-function escribiendo(){
-agregarChat("<i id='typing'>Novia está escribiendo...</i>");
+// ===== ESCRITURA PROGRESIVA (COMO CHATGPT) =====
+async function escribirTexto(texto){
+
+let linea = document.createElement("div");
+linea.innerHTML="<b>Novia:</b> ";
+chat.appendChild(linea);
+
+for(let i=0;i<texto.length;i++){
+linea.innerHTML += texto[i];
+await new Promise(r => setTimeout(r,25));
 }
 
-function quitarEscribiendo(){
-let t = document.getElementById("typing");
-if(t) t.remove();
+chat.scrollTop = chat.scrollHeight;
 }
 
 // ===== CHAT =====
@@ -213,34 +191,36 @@ input.value="";
 
 // FOTO ESPECIAL
 if(msg.toLowerCase().includes("hola soy moises")){
-agregarChat("<b>Novia:</b> ¿Este precioso? 😍<br><img src='moises.jpg'>");
+agregarChat("<b>Novia:</b> ¿Este precioso? 😍<br><img src='moises.jpg' width='150'>");
 return;
 }
 
-memoria.push("Moisés: "+msg);
-if(memoria.length>6) memoria.shift();
-guardarMemoria();
+// guardar historial
+historial.push("Moisés: "+msg);
+if(historial.length>10) historial.shift();
+guardar();
 
-escribiendo();
+let prompt = `
+Eres la novia virtual cariñosa, divertida y romántica de Moisés.
+Habla natural, humana, emocional.
 
-let prompt =
-"Eres la novia virtual cariñosa de Moisés.\n"+
-memoria.join("\n")+
-"\nNovia:";
+Conversación:
+${historial.join("\n")}
+
+Novia:
+`;
 
 let resultado = await generador(prompt,{
-max_new_tokens:35,
+max_new_tokens:60,
 temperature:0.9
 });
 
-quitarEscribiendo();
-
 let respuesta = resultado[0].generated_text.replace(prompt,"");
 
-memoria.push("Novia: "+respuesta);
-guardarMemoria();
+historial.push("Novia: "+respuesta);
+guardar();
 
-agregarChat("<b>Novia:</b> "+respuesta);
+escribirTexto(respuesta);
 }
 
 input.addEventListener("keypress", e=>{
