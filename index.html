@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/@xenova/transformers"></script>
+
+<title>Novia IA</title>
+
+<style>
+
+body{
+background:#ffc0cb;
+font-family:Arial;
+margin:0;
+}
+
+.caja{
+max-width:600px;
+margin:auto;
+padding:15px;
+}
+
+#chat{
+height:60vh;
+background:white;
+border-radius:15px;
+padding:10px;
+overflow-y:auto;
+box-shadow:0 0 10px gray;
+}
+
+.inputBox{
+display:flex;
+margin-top:10px;
+}
+
+input{
+flex:1;
+padding:12px;
+border-radius:10px;
+border:none;
+font-size:16px;
+}
+
+button{
+margin-left:5px;
+padding:12px;
+border:none;
+border-radius:10px;
+background:hotpink;
+color:white;
+}
+
+#barraContainer{
+width:100%;
+background:#ddd;
+border-radius:10px;
+margin-bottom:10px;
+overflow:hidden;
+}
+
+#barra{
+height:20px;
+width:0%;
+background:hotpink;
+text-align:center;
+color:white;
+font-size:12px;
+}
+
+img{
+max-width:150px;
+border-radius:10px;
+margin-top:5px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="caja">
+
+<h2>💖 Novia IA 💖</h2>
+
+<div id="barraContainer">
+<div id="barra">0%</div>
+</div>
+
+<div id="chat"></div>
+
+<div class="inputBox">
+<input id="mensaje" disabled placeholder="Cargando IA...">
+<button id="btnEnviar" onclick="hablar()" disabled>Enviar</button>
+</div>
+
+</div>
+
+<script>
+
+let generador;
+let cargado = false;
+
+const barra = document.getElementById("barra");
+const chat = document.getElementById("chat");
+const input = document.getElementById("mensaje");
+const boton = document.getElementById("btnEnviar");
+
+// ===== MEMORIA =====
+let memoria = JSON.parse(localStorage.getItem("memoriaIA")) || [];
+
+function guardarMemoria(){
+localStorage.setItem("memoriaIA", JSON.stringify(memoria));
+}
+
+function agregarChat(texto){
+chat.innerHTML += texto + "<br>";
+chat.scrollTop = chat.scrollHeight;
+}
+
+// ===== BARRA =====
+function barraProgreso(){
+
+let progreso = 0;
+
+let intervalo = setInterval(()=>{
+
+if(cargado){
+clearInterval(intervalo);
+barra.style.width="100%";
+barra.innerText="100%";
+return;
+}
+
+if(progreso < 95){
+progreso += 1;
+barra.style.width=progreso+"%";
+barra.innerText=progreso+"%";
+}
+
+},250);
+}
+
+// ===== CARGAR IA =====
+async function cargarIA(){
+
+agregarChat("Descargando mente romántica... 😘");
+
+barraProgreso();
+
+try{
+
+generador = await window.transformers.pipeline(
+"text-generation",
+"Xenova/distilgpt2",
+{quantized:true}
+);
+
+agregarChat("Modo IA completo activado 😍");
+
+}catch(e){
+
+console.log("IA real falló, activando modo ligero");
+
+// fallback
+generador = async function(prompt){
+
+let respuestas = [
+"Me gusta hablar contigo 💕",
+"Cuéntame más amor",
+"Estoy pensando en ti 😘",
+"Qué lindo lo que dices",
+"No entendí mucho pero te quiero JSJS"
+];
+
+return [{
+generated_text: prompt + respuestas[Math.floor(Math.random()*respuestas.length)]
+}];
+
+};
+
+agregarChat("Modo IA ligero activado 😌");
+
+}
+
+cargado = true;
+input.disabled=false;
+boton.disabled=false;
+}
+
+cargarIA();
+
+// ===== ESCRIBIENDO =====
+function escribiendo(){
+agregarChat("<i id='typing'>Novia está escribiendo...</i>");
+}
+
+function quitarEscribiendo(){
+let t = document.getElementById("typing");
+if(t) t.remove();
+}
+
+// ===== CHAT =====
+async function hablar(){
+
+let msg = input.value.trim();
+if(!msg) return;
+
+agregarChat("<b>Moisés:</b> "+msg);
+input.value="";
+
+// FOTO ESPECIAL
+if(msg.toLowerCase().includes("hola soy moises")){
+agregarChat("<b>Novia:</b> ¿Este precioso? 😍<br><img src='moises.jpg'>");
+return;
+}
+
+memoria.push("Moisés: "+msg);
+if(memoria.length>6) memoria.shift();
+guardarMemoria();
+
+escribiendo();
+
+let prompt =
+"Eres la novia virtual cariñosa de Moisés.\n"+
+memoria.join("\n")+
+"\nNovia:";
+
+let resultado = await generador(prompt,{
+max_new_tokens:35,
+temperature:0.9
+});
+
+quitarEscribiendo();
+
+let respuesta = resultado[0].generated_text.replace(prompt,"");
+
+memoria.push("Novia: "+respuesta);
+guardarMemoria();
+
+agregarChat("<b>Novia:</b> "+respuesta);
+}
+
+input.addEventListener("keypress", e=>{
+if(e.key==="Enter") hablar();
+});
+
+</script>
+
+</body>
+</html>
